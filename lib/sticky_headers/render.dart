@@ -82,6 +82,14 @@ class RenderStickyHeader extends RenderBox
     markNeedsLayout();
   }
 
+  set headerOnTop(bool newValue) {
+    if (_headerOnTop == newValue) {
+      return;
+    }
+    _headerOnTop = newValue;
+    markNeedsLayout();
+  }
+
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
@@ -95,9 +103,9 @@ class RenderStickyHeader extends RenderBox
   }
 
   // short-hand to access the child RenderObjects
-  RenderBox get _headerBox => lastChild;
+  RenderBox get _headerBox => _headerOnTop ? lastChild : firstChild;
 
-  RenderBox get _contentBox => firstChild;
+  RenderBox get _contentBox =>  _headerOnTop ? firstChild : lastChild;
 
   bool get isVerticalAxis => _scrollable.axisDirection==AxisDirection.down;
 

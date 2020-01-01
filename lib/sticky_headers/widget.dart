@@ -65,8 +65,7 @@ class StickyHeader extends MultiChildRenderObjectWidget {
       scrollable: scrollable,
       callback: this.callback,
       overlapHeaders: this.overlapHeaders,
-        headerOnTop: this.headerOnTop,
-      scroll
+      headerOnTop: this.headerOnTop,
     );
   }
 
