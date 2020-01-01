@@ -28,19 +28,28 @@ class RenderStickyHeader extends RenderBox
   RenderStickyHeaderCallback _callback;
   ScrollableState _scrollable;
   bool _overlapHeaders;
+  bool _headerOnTop;
 
   RenderStickyHeader({
     @required ScrollableState scrollable,
     RenderStickyHeaderCallback callback,
     bool overlapHeaders: false,
+    bool headerOnTop: false,
     RenderBox header,
     RenderBox content,
   })  : assert(scrollable != null),
         _scrollable = scrollable,
         _callback = callback,
-        _overlapHeaders = overlapHeaders {
-    if (content != null) add(content);
-    if (header != null) add(header);
+        _overlapHeaders = overlapHeaders,
+        _headerOnTop = headerOnTop{
+    if(_headerOnTop) {
+      if (content != null) add(content);
+      if (header != null) add(header);
+    }else{
+      if (header != null) add(header);
+      if (content != null) add(content);
+    }
+
   }
 
   set scrollable(ScrollableState newValue) {
@@ -90,6 +99,8 @@ class RenderStickyHeader extends RenderBox
 
   RenderBox get _contentBox => firstChild;
 
+  bool get isVerticalAxis => _scrollable.axisDirection==AxisDirection.down;
+
   @override
   void performLayout() {
     // ensure we have header and content boxes
@@ -100,13 +111,29 @@ class RenderStickyHeader extends RenderBox
     _headerBox.layout(childConstraints, parentUsesSize: true);
     _contentBox.layout(childConstraints, parentUsesSize: true);
 
-    final headerHeight = _headerBox.size.height;
-    final contentHeight = _contentBox.size.height;
+    double headerHeight, contentHeight;
+    double headerWidth, contentWidth;
+    double width, height;
+    if(isVerticalAxis) {
+     headerHeight = _headerBox.size.height;
+     contentHeight = _contentBox.size.height;
+      width = max(constraints.minWidth, _contentBox.size.width);
+      height = max(constraints.minHeight,
+          _overlapHeaders ? contentHeight : headerHeight + contentHeight);
+    }else{
+      headerWidth = _headerBox.size.width;
+      contentWidth = _contentBox.size.width;
+      height = max(constraints.minHeight, _contentBox.size.height);
+      width = max(constraints.minWidth,
+          _overlapHeaders ? contentWidth : headerWidth + contentWidth);
+    }
+    //double headerHeight = _headerBox.size.height;
+    //double contentHeight = _contentBox.size.height;
 
     // determine size of ourselves based on content widget
-    final width = max(constraints.minWidth, _contentBox.size.width);
-    final height = max(constraints.minHeight,
-        _overlapHeaders ? contentHeight : headerHeight + contentHeight);
+    //final width = max(constraints.minWidth, _contentBox.size.width);
+    //final height = max(constraints.minHeight,
+    //    _overlapHeaders ? contentHeight : headerHeight + contentHeight);
     size = new Size(width, height);
     assert(size.width == constraints.constrainWidth(width));
     assert(size.height == constraints.constrainHeight(height));
@@ -114,19 +141,23 @@ class RenderStickyHeader extends RenderBox
 
     // place content underneath header
     final contentParentData = _contentBox.parentData as MultiChildLayoutParentData;
-    contentParentData.offset = new Offset(0.0, _overlapHeaders ? 0.0 : headerHeight);
+    if(isVerticalAxis) {
+      contentParentData.offset = new Offset(0.0, _overlapHeaders ? 0.0 : headerHeight);
+    }else{
+      contentParentData.offset = new Offset( _overlapHeaders ? 0.0 : headerWidth, 0.0);
+    }
 
     // determine by how much the header should be stuck to the top
     final double stuckOffset = determineStuckOffset();
 
     // place header over content relative to scroll offset
-    final double maxOffset = height - headerHeight;
+    final double maxOffset = isVerticalAxis ? (height - headerHeight) : (width-headerWidth);
     final headerParentData = _headerBox.parentData as MultiChildLayoutParentData;
-    headerParentData.offset = new Offset(0.0, max(0.0, min(-stuckOffset, maxOffset)));
+    headerParentData.offset = isVerticalAxis ? Offset(0.0, max(0.0, min(-stuckOffset, maxOffset))) : Offset(max(0.0, min(-stuckOffset, maxOffset)), 0.0);
 
     // report to widget how much the header is stuck.
     if (_callback != null) {
-      final stuckAmount = max(min(headerHeight, stuckOffset), -headerHeight) / headerHeight;
+      final stuckAmount = isVerticalAxis ? max(min(headerHeight, stuckOffset), -headerHeight) / headerHeight : max(min(headerWidth, stuckOffset), -headerWidth) / headerWidth;
       _callback(stuckAmount);
     }
   }
@@ -135,7 +166,7 @@ class RenderStickyHeader extends RenderBox
     final scrollBox = _scrollable.context.findRenderObject();
     if (scrollBox?.attached ?? false) {
       try {
-        return localToGlobal(Offset.zero, ancestor: scrollBox).dy;
+        return isVerticalAxis ? localToGlobal(Offset.zero, ancestor: scrollBox).dy : localToGlobal(Offset.zero, ancestor: scrollBox).dx;
       } catch (e) {
         // ignore and fall-through and return 0.0
       }
@@ -153,26 +184,46 @@ class RenderStickyHeader extends RenderBox
 
   @override
   double computeMinIntrinsicWidth(double height) {
-    return _contentBox.getMinIntrinsicWidth(height);
+    if(!isVerticalAxis) {
+      return _overlapHeaders ? _contentBox.getMinIntrinsicWidth(height)
+          : (_headerBox.getMinIntrinsicWidth(height) +
+          _contentBox.getMinIntrinsicWidth(height));
+    }else{
+      return _contentBox.getMinIntrinsicWidth(height);
+    }
   }
 
   @override
   double computeMaxIntrinsicWidth(double height) {
-    return _contentBox.getMaxIntrinsicWidth(height);
+    if(!isVerticalAxis) {
+      return _overlapHeaders ? _contentBox.getMaxIntrinsicWidth(height)
+          : (_headerBox.getMaxIntrinsicWidth(height) +
+          _contentBox.getMaxIntrinsicWidth(height));
+    }else{
+      return _contentBox.getMaxIntrinsicWidth(height);
+    }
   }
 
   @override
   double computeMinIntrinsicHeight(double width) {
-    return _overlapHeaders ? _contentBox.getMinIntrinsicHeight(width)
-        : (_headerBox.getMinIntrinsicHeight(width) +
-            _contentBox.getMinIntrinsicHeight(width));
+    if(isVerticalAxis) {
+      return _overlapHeaders ? _contentBox.getMinIntrinsicHeight(width)
+          : (_headerBox.getMinIntrinsicHeight(width) +
+          _contentBox.getMinIntrinsicHeight(width));
+    }else{
+      return _contentBox.getMinIntrinsicHeight(width);
+    }
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
+    if(isVerticalAxis) {
     return _overlapHeaders ? _contentBox.getMaxIntrinsicHeight(width)
         : (_headerBox.getMaxIntrinsicHeight(width) +
             _contentBox.getMaxIntrinsicHeight(width));
+    }else{
+      return _contentBox.getMaxIntrinsicHeight(width);
+    }
   }
 
   @override

@@ -34,6 +34,7 @@ class StickyHeader extends MultiChildRenderObjectWidget {
     @required this.header,
     @required this.content,
     this.overlapHeaders: false,
+    this.headerOnTop: false,
     this.callback,
   }) : super(
           key: key,
@@ -50,6 +51,8 @@ class StickyHeader extends MultiChildRenderObjectWidget {
   /// If true, the header will overlap the Content.
   final bool overlapHeaders;
 
+  final bool headerOnTop;
+
   /// Optional callback with stickyness value. If you think you need this, then you might want to
   /// consider using [StickyHeaderBuilder] instead.
   final RenderStickyHeaderCallback callback;
@@ -62,6 +65,8 @@ class StickyHeader extends MultiChildRenderObjectWidget {
       scrollable: scrollable,
       callback: this.callback,
       overlapHeaders: this.overlapHeaders,
+        headerOnTop: this.headerOnTop,
+      scroll
     );
   }
 
@@ -70,7 +75,8 @@ class StickyHeader extends MultiChildRenderObjectWidget {
     renderObject
       ..scrollable = Scrollable.of(context)
       ..callback = this.callback
-      ..overlapHeaders = this.overlapHeaders;
+      ..overlapHeaders = this.overlapHeaders
+      ..headerOnTop = this.headerOnTop;
   }
 }
 
@@ -88,6 +94,7 @@ class StickyHeaderBuilder extends StatefulWidget {
     @required this.builder,
     this.content,
     this.overlapHeaders: false,
+    this.headerOnTop: false,
   }) : super(key: key);
 
   /// Called when the sticky amount changes for the header.
@@ -100,6 +107,8 @@ class StickyHeaderBuilder extends StatefulWidget {
   /// If true, the header will overlap the Content.
   final bool overlapHeaders;
 
+  final bool headerOnTop;
+
   @override
   _StickyHeaderBuilderState createState() => new _StickyHeaderBuilderState();
 }
@@ -111,6 +120,7 @@ class _StickyHeaderBuilderState extends State<StickyHeaderBuilder> {
   Widget build(BuildContext context) {
     return new StickyHeader(
       overlapHeaders: widget.overlapHeaders,
+      headerOnTop: widget.headerOnTop,
       header: new LayoutBuilder(
         builder: (context, _) => widget.builder(context, _stuckAmount ?? 0.0),
       ),
