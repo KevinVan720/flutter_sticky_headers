@@ -33,13 +33,14 @@ class StickyHeader extends MultiChildRenderObjectWidget {
     Key key,
     @required this.header,
     @required this.content,
+    this.controller,
     this.overlapHeaders: false,
     this.headerOnTop: false,
     this.callback,
   }) : super(
           key: key,
           // Note: The order of the children must be preserved for the RenderObject.
-          children: [content, header],
+          children: headerOnTop ? [content, header] : [header, content],
         );
 
   /// Header to be shown at the top of the parent [Scrollable] content.
@@ -53,13 +54,15 @@ class StickyHeader extends MultiChildRenderObjectWidget {
 
   final bool headerOnTop;
 
+  final ScrollController controller;
+
   /// Optional callback with stickyness value. If you think you need this, then you might want to
   /// consider using [StickyHeaderBuilder] instead.
   final RenderStickyHeaderCallback callback;
 
   @override
   RenderStickyHeader createRenderObject(BuildContext context) {
-    var scrollable = Scrollable.of(context);
+    var scrollable = this.controller??Scrollable.of(context);
     assert(scrollable != null);
     return new RenderStickyHeader(
       scrollable: scrollable,
@@ -71,8 +74,9 @@ class StickyHeader extends MultiChildRenderObjectWidget {
 
   @override
   void updateRenderObject(BuildContext context, RenderStickyHeader renderObject) {
+    var scrollable = this.controller??Scrollable.of(context);
     renderObject
-      ..scrollable = Scrollable.of(context)
+      ..scrollable = scrollable
       ..callback = this.callback
       ..overlapHeaders = this.overlapHeaders
       ..headerOnTop = this.headerOnTop;
@@ -94,6 +98,7 @@ class StickyHeaderBuilder extends StatefulWidget {
     this.content,
     this.overlapHeaders: false,
     this.headerOnTop: false,
+    this.controller,
   }) : super(key: key);
 
   /// Called when the sticky amount changes for the header.
@@ -107,6 +112,8 @@ class StickyHeaderBuilder extends StatefulWidget {
   final bool overlapHeaders;
 
   final bool headerOnTop;
+
+  final ScrollController controller;
 
   @override
   _StickyHeaderBuilderState createState() => new _StickyHeaderBuilderState();
@@ -124,6 +131,7 @@ class _StickyHeaderBuilderState extends State<StickyHeaderBuilder> {
         builder: (context, _) => widget.builder(context, _stuckAmount ?? 0.0),
       ),
       content: widget.content,
+      controller: widget.controller,
       callback: (double stuckAmount) {
         if (_stuckAmount != stuckAmount) {
           _stuckAmount = stuckAmount;
