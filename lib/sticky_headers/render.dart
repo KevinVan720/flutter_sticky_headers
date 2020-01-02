@@ -2,6 +2,7 @@
 // Use of this source code is governed by a the MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
@@ -26,22 +27,25 @@ class RenderStickyHeader extends RenderBox
         RenderBoxContainerDefaultsMixin<RenderBox, MultiChildLayoutParentData> {
 
   RenderStickyHeaderCallback _callback;
-  ScrollableState _scrollable;
+  ScrollPosition _scrollPosition;
   bool _overlapHeaders;
   bool _headerOnTop;
+  Axis _scrollDirection;
 
   RenderStickyHeader({
-    @required ScrollableState scrollable,
+    @required ScrollPosition scrollPosition,
     RenderStickyHeaderCallback callback,
     bool overlapHeaders: false,
     bool headerOnTop: false,
+    Axis scrollDirection: Axis.vertical,
     RenderBox header,
     RenderBox content,
-  })  : assert(scrollable != null),
-        _scrollable = scrollable,
+  })  :
+        _scrollPosition = scrollPosition,
         _callback = callback,
         _overlapHeaders = overlapHeaders,
-        _headerOnTop = headerOnTop{
+        _headerOnTop = headerOnTop,
+        _scrollDirection = scrollDirection{
     if(_headerOnTop) {
       if (content != null) add(content);
       if (header != null) add(header);
@@ -52,17 +56,16 @@ class RenderStickyHeader extends RenderBox
 
   }
 
-  set scrollable(ScrollableState newValue) {
-    assert(newValue != null);
-    if (_scrollable == newValue) {
+  set scrollPosition(ScrollPosition newValue) {
+    if (_scrollPosition == newValue) {
       return;
     }
-    final ScrollableState oldValue = _scrollable;
-    _scrollable = newValue;
+    final ScrollPosition oldValue = _scrollPosition;
+    _scrollPosition = newValue;
     markNeedsLayout();
     if (attached) {
-      oldValue.position?.removeListener(markNeedsLayout);
-      newValue.position?.addListener(markNeedsLayout);
+      oldValue?.removeListener(markNeedsLayout);
+      newValue?.addListener(markNeedsLayout);
     }
   }
 
@@ -90,15 +93,23 @@ class RenderStickyHeader extends RenderBox
     markNeedsLayout();
   }
 
+  set scrollDirection(Axis newValue) {
+    if (_scrollDirection == newValue) {
+      return;
+    }
+    _scrollDirection = newValue;
+    markNeedsLayout();
+  }
+
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
-    _scrollable.position?.addListener(markNeedsLayout);
+    _scrollPosition?.addListener(markNeedsLayout);
   }
 
   @override
   void detach() {
-    _scrollable.position?.removeListener(markNeedsLayout);
+    _scrollPosition?.removeListener(markNeedsLayout);
     super.detach();
   }
 
@@ -107,7 +118,7 @@ class RenderStickyHeader extends RenderBox
 
   RenderBox get _contentBox =>  _headerOnTop ? firstChild : lastChild;
 
-  bool get isVerticalAxis => _scrollable.axisDirection==AxisDirection.down;
+  bool get isVerticalAxis => _scrollDirection==Axis.vertical;
 
   @override
   void performLayout() {
@@ -171,7 +182,7 @@ class RenderStickyHeader extends RenderBox
   }
 
   double determineStuckOffset() {
-    final scrollBox = _scrollable.context.findRenderObject();
+    final scrollBox = _scrollPosition.context.notificationContext.findRenderObject();
     if (scrollBox?.attached ?? false) {
       try {
         return isVerticalAxis ? localToGlobal(Offset.zero, ancestor: scrollBox).dy : localToGlobal(Offset.zero, ancestor: scrollBox).dx;

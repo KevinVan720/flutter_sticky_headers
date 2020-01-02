@@ -36,6 +36,7 @@ class StickyHeader extends MultiChildRenderObjectWidget {
     this.controller,
     this.overlapHeaders: false,
     this.headerOnTop: false,
+    this.scrollDirection: Axis.vertical,
     this.callback,
   }) : super(
           key: key,
@@ -54,6 +55,8 @@ class StickyHeader extends MultiChildRenderObjectWidget {
 
   final bool headerOnTop;
 
+  final Axis scrollDirection;
+
   final ScrollController controller;
 
   /// Optional callback with stickyness value. If you think you need this, then you might want to
@@ -62,24 +65,27 @@ class StickyHeader extends MultiChildRenderObjectWidget {
 
   @override
   RenderStickyHeader createRenderObject(BuildContext context) {
-    var scrollable = this.controller??Scrollable.of(context);
-    assert(scrollable != null);
+    final scrollPosition = this.controller?.position ?? Scrollable.of(context).position;
+    assert(scrollPosition != null);
     return new RenderStickyHeader(
-      scrollable: scrollable,
+      scrollPosition: scrollPosition,
       callback: this.callback,
       overlapHeaders: this.overlapHeaders,
       headerOnTop: this.headerOnTop,
+      scrollDirection: this.scrollDirection,
     );
   }
 
   @override
   void updateRenderObject(BuildContext context, RenderStickyHeader renderObject) {
-    var scrollable = this.controller??Scrollable.of(context);
+    final scrollPosition = this.controller?.position ?? Scrollable.of(context).position;
+    assert(scrollPosition != null);
     renderObject
-      ..scrollable = scrollable
+      ..scrollPosition = scrollPosition
       ..callback = this.callback
       ..overlapHeaders = this.overlapHeaders
-      ..headerOnTop = this.headerOnTop;
+      ..headerOnTop = this.headerOnTop
+      ..scrollDirection=this.scrollDirection;
   }
 }
 
@@ -98,6 +104,7 @@ class StickyHeaderBuilder extends StatefulWidget {
     this.content,
     this.overlapHeaders: false,
     this.headerOnTop: false,
+    this.scrollDirection: Axis.vertical,
     this.controller,
   }) : super(key: key);
 
@@ -113,6 +120,8 @@ class StickyHeaderBuilder extends StatefulWidget {
 
   final bool headerOnTop;
 
+  final Axis scrollDirection;
+
   final ScrollController controller;
 
   @override
@@ -127,6 +136,7 @@ class _StickyHeaderBuilderState extends State<StickyHeaderBuilder> {
     return new StickyHeader(
       overlapHeaders: widget.overlapHeaders,
       headerOnTop: widget.headerOnTop,
+      scrollDirection: widget.scrollDirection,
       header: new LayoutBuilder(
         builder: (context, _) => widget.builder(context, _stuckAmount ?? 0.0),
       ),
